@@ -1,3 +1,7 @@
+# This config has Envoy listen on localhost:18000, responding to any requests with static content "hello from server".
+# In addition, the example wasm plugin to validate the requests payload runs.
+# The plugin intercepts the request and makes Envoy return 403 instead of the static content
+# if the request has no JSON payload or the payload JSON doesn't have "id" or "token" keys.
 static_resources:
   listeners:
     - name: main
@@ -22,7 +26,8 @@ static_resources:
                         - match:
                             prefix: "/"
                           route:
-                            cluster: svc_hello
+                            cluster: web_service
+
                 http_filters:
                   - name: envoy.filters.http.wasm
                     typed_config:
@@ -30,33 +35,33 @@ static_resources:
                       type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
                       value:
                         config:
-                          name: "my_plugin"
-                          root_id: "my_root_id"
+                          configuration:
+                            "@type": type.googleapis.com/google.protobuf.StringValue
+                            value: |
+                              { "requiredKeys": ["id", "token"] }
                           vm_config:
-                            vm_id: "my_vm_id"
                             runtime: "envoy.wasm.runtime.v8"
                             code:
                               local:
                                 filename: "./wasm/main.wasm"
-                            allow_precompiled: true
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
   clusters:
-    - name: svc_hello
+    - name: web_service
       connect_timeout: 0.25s
       type: STATIC
       lb_policy: ROUND_ROBIN
       load_assignment:
-        cluster_name: svc_hello
+        cluster_name: mock_service
         endpoints:
           - lb_endpoints:
               - endpoint:
                   address:
                     socket_address:
                       address: 127.0.0.1
-                      port_value: 8080
-
+                      port_value: 8099
 admin:
   access_log_path: "/dev/null"
   address:

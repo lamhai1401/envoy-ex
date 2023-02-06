@@ -9,12 +9,12 @@ import (
 func main() {
 
 	m := http.NewServeMux()
-	m.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write([]byte("hola mundo :)")); err != nil {
 			log.Errorf("failed to stream response with '%v'", err)
 		}
 	})
-	const addr = ":8080"
+	const addr = ":8099"
 	server := &http.Server{
 		Addr:    addr,
 		Handler: m,
